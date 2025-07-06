@@ -8,22 +8,6 @@ from pathlib import Path
 from time import sleep
 
 
-# HOW TO RUN:
-
-# 1. Export google sheets table from https://www.reddit.com/r/osugame/comments/1c1k8wu/ranked_vocaloid_maps_database/ as html!
-#    Note: other options do not work (e.g. csv export), since links are stored in separate hidden tabs (e.g. 2025 data). The only way that worked for me was export as html
-# 2. Extract html archive to some folder
-# 3. Mofify DIRECTORY and HTML_DIRECTORY below
-# 4. Install python (if not already installed)
-# 5. Install pandas and requests (if not already installed): `pip3 install pandas requests`
-# 6. Run the script: `python3 download_osu_maps_vocaloid.py {path to download maps to} {path to extracted html files} {other options, use --help for more info}`
-#    e.g. `python3 download_osu_maps_vocaloid.py ~/vocaloid ~/vocaloid_table -s 2008 -e 2026 -f STD``
-
-# NOTES:
-# - You can stop the script via Ctrl+C and continue it later
-# -
-
-
 # only retries 500 error codes
 def get_with_retry(url, num_retries=10):
     for i in range(num_retries):
