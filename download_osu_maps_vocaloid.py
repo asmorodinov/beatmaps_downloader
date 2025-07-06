@@ -8,15 +8,25 @@ from pathlib import Path
 from time import sleep
 
 
-# only retries 500 error codes
+MIRRORS = [
+    "https://beatconnect.io/b/{}",
+    "https://catboy.best/d/{}"
+]
+
+
 def get_with_retry(url, num_retries=10):
     for i in range(num_retries):
+        print(f"\trequested {url}")
         response = requests.get(url)
 
         if response.status_code == 500:
-            print(f"got error code {response.status_code} while requesting url {url}, going to sleep for 1s and then retry")
+            print(f"\tgot error code {response.status_code} while requesting url {url}, going to sleep for 1s and then retry")
             sleep(1)
             continue
+        elif response.status_code == 404:
+            # does not make sense to retry
+            print(f"\tgot error code {response.status_code} while requesting url {url}")
+            return None
         else:
             response.raise_for_status()
             return response
@@ -28,11 +38,23 @@ def download_map(directory, year, beatmap):
     if path.is_file():
         # file was already downloaded previously => skip download
         print(f"{beatmap} was already downloaded, skip download")
-        return
+        return True
 
     print(f"downloading {beatmap}")
 
-    response = get_with_retry(f"https://beatconnect.io/b/{beatmap}")
+    for mirror in MIRRORS:
+        response = get_with_retry(mirror.format(beatmap))
+
+        if response is None:
+            if mirror == MIRRORS[-1]:
+                print(f"failed to download {beatmap}") # this was the last mirror available
+            else:
+                print(f"\tfailed to download {beatmap}, going to try another mirror")
+        else:
+            break
+
+    if response is None:
+        return False
 
     try:
         with path.open("wb") as f:
@@ -44,6 +66,7 @@ def download_map(directory, year, beatmap):
         exit(1)
 
     print(f"downloaded {beatmap}")
+    return True
 
 
 def parse_maps_from_html(directory, year, filter_mode="STD"):
@@ -73,7 +96,11 @@ def parse_maps_from_html(directory, year, filter_mode="STD"):
 def download_maps(download_directory, html_directory, year_start=2008, year_end=2026, filter_mode="STD"):
     total_maps = 0
     downloaded_maps = 0
+    failed_maps = 0
+
     maps = {}
+
+    failed_to_download = []
 
     for year in range(year_start, year_end):
         maps[year] = parse_maps_from_html(html_directory, year, filter_mode)
@@ -81,12 +108,20 @@ def download_maps(download_directory, html_directory, year_start=2008, year_end=
 
     for year, year_maps in maps.items():
         for beatmap in year_maps:
-            download_map(download_directory, year, beatmap)
-            downloaded_maps += 1
+            if download_map(download_directory, year, beatmap):
+                downloaded_maps += 1
+            else:
+                failed_to_download.append(beatmap)
+                failed_maps += 1
 
-            percentage = "{:.2f}%".format(downloaded_maps * 100 / total_maps)
+            percentage = "{:.2f}%".format((downloaded_maps + failed_maps) * 100 / total_maps)
 
-            print(f"current progress: {percentage} ({downloaded_maps} / {total_maps})")
+            print(f"current progress: {percentage} (downloaded maps: {downloaded_maps}, failed maps: {failed_maps}, downloaded + failed: {downloaded_maps + failed_maps}, total_maps: {total_maps})")
+
+    if failed_to_download:
+        print("failed to download followings maps:")
+        print(*failed_to_download, sep="\n")
+        exit(2)
 
 
 def main():
