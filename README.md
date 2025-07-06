@@ -4,6 +4,8 @@
 
 It can download osu maps from the html table, the main purpose is to automatically download all vocaloid maps from https://www.reddit.com/r/osugame/comments/1c1k8wu/ranked_vocaloid_maps_database/
 
+But you can also reuse `download_map` function and define your own function for getting beatmap ids.
+
 ## How to run
 
 1. Export google sheets table from https://www.reddit.com/r/osugame/comments/1c1k8wu/ranked_vocaloid_maps_database/ as html
