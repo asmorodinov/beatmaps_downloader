@@ -17,7 +17,16 @@ Note: other options do not work (e.g. csv export), since links are stored in sep
 
 e.g. `python3 download_osu_maps_vocaloid.py ~/vocaloid ~/vocaloid_table -s 2008 -e 2026 -f STD`
 
-## additional notes
+## Info about mirror websites
+
+- `https://nerinyan.moe/d/{beatmap}` - does not work, asks to enable javascript
+- `https://osu.direct/api/d/{beatmap}` - does not work, 403 error code
+- `https://osu.ppy.sh/beatmapsets/{beatmap}/download` - works, but requires authentication
+- `https://beatconnect.io/b/{beatmaps}` - sometimes returns 404 (map not found)
+- `https://catboy.best/d/{beatmaps}` - works, but sometimes downloads without a video, e.g. 2149839 beatmap (compare with https://osu.ppy.sh/s/2149839)
+
+
+## Additional notes
 
 - You can stop the script via Ctrl+C and continue it later. Map download will be skipped if file already exists on disk
 - When new maps get added to the list, you can update html table and download only new ones via script (since already downloaded maps are skipped)
@@ -32,19 +41,3 @@ python3 download_osu_maps_vocaloid.py ~/vocaloid ~/vocaloid_table -s 2020 -e 202
 python3 download_osu_maps_vocaloid.py ~/vocaloid ~/vocaloid_table -s 2024 -e 2026
 ```
 
-- Some maps are not available on beatconnect (looks like mostly explicit ones), I had to manually download them from osu.ppy.sh and copy to the directory with correct naming (`{ranked_year}_{beatmap_id}.osz`). These were maps for the time of writing readme, but there may be more maps in the future:
-  - https://osu.ppy.sh/s/1627361
-  - https://osu.ppy.sh/s/1767411
-  - https://osu.ppy.sh/s/1817101
-  - https://osu.ppy.sh/s/1817377
-  - https://osu.ppy.sh/s/1818864
-  - https://osu.ppy.sh/s/1840853
-  - https://osu.ppy.sh/s/1911733
-  - https://osu.ppy.sh/s/1922542
-  - https://osu.ppy.sh/s/2070848
-  - https://osu.ppy.sh/s/2154821
-  - https://osu.ppy.sh/s/2194528
-  - https://osu.ppy.sh/s/2302431
-  - https://osu.ppy.sh/s/2308687
-  - https://osu.ppy.sh/s/2353458
-- TODO: come up with a better way to download maps rather than using beatconnect
