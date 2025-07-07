@@ -21,11 +21,11 @@ e.g. `python3 download_osu_maps_vocaloid.py ~/vocaloid ~/vocaloid_table -s 2008 
 
 ## Info about mirror websites
 
-- `https://nerinyan.moe/d/{beatmap}` - does not work, asks to enable javascript
+- `https://nerinyan.moe/d/{beatmap}` - does not work (via simple `requests.get()` call), asks to enable javascript
 - `https://osu.direct/api/d/{beatmap}` - does not work, 403 error code
 - `https://osu.ppy.sh/beatmapsets/{beatmap}/download` - works, but requires authentication
 - `https://beatconnect.io/b/{beatmaps}` - sometimes returns 404 (map not found)
-- `https://catboy.best/d/{beatmaps}` - works, but sometimes downloads without a video, e.g. 2149839 beatmap (compare with https://osu.ppy.sh/s/2149839)
+- `https://catboy.best/d/{beatmaps}` - works, but sometimes downloads older map which has to be updated later within the osu!lazer
 
 
 ## Additional notes
