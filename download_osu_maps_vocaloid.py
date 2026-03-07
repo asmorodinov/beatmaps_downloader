@@ -9,21 +9,40 @@ from time import sleep
 
 
 MIRRORS = [
-    "https://beatconnect.io/b/{}",
-    "https://catboy.best/d/{}"
+    ("https://catboy.best/d/{}", "https://catboy.best/d/{}n"),
+    ("https://beatconnect.io/b/{}", "https://beatconnect.io/b/{}/?novideo=1"),
 ]
 
 
-def get_with_retry(url, num_retries=10):
+def get_with_retry(url, num_retries=7):
     for i in range(num_retries):
         print(f"\trequested {url}")
         response = requests.get(url)
 
-        if response.status_code == 500:
-            print(f"\tgot error code {response.status_code} while requesting url {url}, going to sleep for 1s and then retry")
-            sleep(1)
+        retriable_error_codes = [
+            408,  # request timeout
+            429,  # too many requests
+            500,  # internal server error
+            502,  # bad gateway
+            503,  # service unavailable
+            504,  # gateway timeout
+        ]
+        
+        non_retriable_error_codes = [
+            400,  # bad request
+            401,  # unauthorized
+            403,  # forbidden
+            404,  # not found
+            405,  # method not allowed
+            409,  # conflict
+            422,  # unprocessable entity
+        ]
+
+        if response.status_code in retriable_error_codes:
+            print(f"\tgot error code {response.status_code} while requesting url {url}, going to sleep for {2 ** i}s and then retry")
+            sleep(2 ** i)
             continue
-        elif response.status_code == 404:
+        elif response.status_code in non_retriable_error_codes:
             # does not make sense to retry
             print(f"\tgot error code {response.status_code} while requesting url {url}")
             return None
@@ -32,7 +51,7 @@ def get_with_retry(url, num_retries=10):
             return response
 
 
-def download_map(directory, year, beatmap):
+def download_map(directory, year, beatmap, delay, no_video):
     path = Path(directory) / f"{year}_{beatmap}.osz"
 
     if path.is_file():
@@ -42,11 +61,19 @@ def download_map(directory, year, beatmap):
 
     print(f"downloading {beatmap}")
 
-    for mirror in MIRRORS:
-        response = get_with_retry(mirror.format(beatmap))
+    # sleep before downloading to avoid "429 too many requests" errors
+    sleep(delay)
+
+    for mirror, mirror_no_video in MIRRORS:
+        if no_video:
+            selected_mirror = mirror_no_video
+        else:
+            selected_mirror = mirror
+
+        response = get_with_retry(selected_mirror.format(beatmap))
 
         if response is None:
-            if mirror == MIRRORS[-1]:
+            if (mirror, mirror_no_video) == MIRRORS[-1]:
                 print(f"failed to download {beatmap}") # this was the last mirror available
             else:
                 print(f"\tfailed to download {beatmap}, going to try another mirror")
@@ -93,7 +120,7 @@ def parse_maps_from_html(directory, year, filter_mode="STD"):
     return maps
 
 
-def download_maps(download_directory, html_directory, year_start=2008, year_end=2026, filter_mode="STD"):
+def download_maps(download_directory, html_directory, year_start=2008, year_end=2026, filter_mode="STD", delay=5, no_video=False):
     total_maps = 0
     downloaded_maps = 0
     failed_maps = 0
@@ -108,7 +135,7 @@ def download_maps(download_directory, html_directory, year_start=2008, year_end=
 
     for year, year_maps in maps.items():
         for beatmap in year_maps:
-            if download_map(download_directory, year, beatmap):
+            if download_map(download_directory, year, beatmap, delay, no_video):
                 downloaded_maps += 1
             else:
                 failed_to_download.append(beatmap)
@@ -131,6 +158,9 @@ def main():
     parser.add_argument("-s", "--year_start", type=int, default=2008, help="start year (inclusive)")
     parser.add_argument("-e", "--year_end", type=int, default=2026, help="end year (non-inclusive)")
     parser.add_argument("-f", "--filter_mode", type=str, choices=["STD", "TAIKO", "MANIA", "CATCH"], default="STD", help="filter game mode")
+    parser.add_argument("-d", "--delay", type=int, default=5, help="delay between iterations (to not get ip blocked)")
+    parser.add_argument("-n", "--no-video", action='store_true', help="don't include video, if set (to save disk space and network bandwidth)")
+
     args = parser.parse_args()
 
     download_maps(**vars(args))
