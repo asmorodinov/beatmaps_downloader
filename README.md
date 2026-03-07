@@ -35,8 +35,9 @@ Note: there is another option `-n` which downloads maps without video, to save d
 
 `beatconnect.io` sometimes will give you captchas to solve, in this case the downloaded file will be around ~10KB in size. You can delete these files, and then try to download maps again later.
 
-From my experience, it seems like `beatconnect.io` will give you "429 too many requests" errors (and captchas to solve), even with 5 seconds delay (maybe it needs to be increased).
-And `catboy.best` does not give "429 too many requests" errors, even with 0 seconds delay.
+From my experience, it seems like `beatconnect.io` will give you "429 too many requests" errors (and captchas to solve), even with 5 seconds delay (maybe this delay needs to be increased).
+
+`catboy.best` also has a daily limit of downloads, but it is relatively large. If you run into 429 errors, try again next day.
 
 So overall, it looks like `catboy.best` is indeed the best available mirror for now (it has higher priority in the script, so it will be used by default, and script will fallback to `beatconnect.io` in case of errors).
 
