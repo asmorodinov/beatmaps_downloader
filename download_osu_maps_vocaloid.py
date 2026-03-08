@@ -1,9 +1,10 @@
 import argparse
 import requests
 import re
-
 import pandas as pd
-
+import zipfile
+import io
+import sys
 from pathlib import Path
 from time import sleep
 
@@ -14,9 +15,19 @@ MIRRORS = [
 ]
 
 
+too_many_requests_counter = 0.0
+too_many_requests_limit = 10
+
+failed_maps_counter = 0.0
+failed_maps_limit = 10
+
+
 def get_with_retry(url, num_retries=7):
+    global too_many_requests_counter
+
     for i in range(num_retries):
-        print(f"\trequested {url}")
+        print(f"\tRequested {url}")
+
         response = requests.get(url)
 
         retriable_error_codes = [
@@ -27,7 +38,7 @@ def get_with_retry(url, num_retries=7):
             503,  # service unavailable
             504,  # gateway timeout
         ]
-        
+
         non_retriable_error_codes = [
             400,  # bad request
             401,  # unauthorized
@@ -38,62 +49,93 @@ def get_with_retry(url, num_retries=7):
             422,  # unprocessable entity
         ]
 
+        if response.status_code == 429:
+            too_many_requests_counter += 1
+            if too_many_requests_counter > too_many_requests_limit:
+                print("Going to stop, since it looks like we are getting blocked right now", file=sys.stderr)
+                exit(3)
+        elif response.status_code == 200:
+            too_many_requests_counter *= 0.99  # lower the counter a little bit, but don't fully reset it
+
         if response.status_code in retriable_error_codes:
-            print(f"\tgot error code {response.status_code} while requesting url {url}, going to sleep for {2 ** i}s and then retry")
+            print(f"\tGot error code {response.status_code} while requesting url {url}, going to sleep for {2 ** i}s and then retry", file=sys.stderr)
             sleep(2 ** i)
             continue
         elif response.status_code in non_retriable_error_codes:
             # does not make sense to retry
-            print(f"\tgot error code {response.status_code} while requesting url {url}")
+            print(f"\tGot error code {response.status_code} while requesting url {url}", file=sys.stderr)
             return None
         else:
             response.raise_for_status()
             return response
 
+    print(f"\tStill got an error while requesting url {url}, even after {num_retries} attempts", file=sys.stderr)
+    return None
 
-def download_map(directory, year, beatmap, delay, no_video):
-    path = Path(directory) / f"{year}_{beatmap}.osz"
 
-    if path.is_file():
-        # file was already downloaded previously => skip download
-        print(f"{beatmap} was already downloaded, skip download")
-        return True
+def sanitize_name(name):
+    # Replace forbidden characters with underscores
+    return re.sub(r'[<>:"/\\|?*]', '_', name)
 
-    print(f"downloading {beatmap}")
 
-    # sleep before downloading to avoid "429 too many requests" errors
-    sleep(delay)
-
-    for mirror, mirror_no_video in MIRRORS:
-        if no_video:
-            selected_mirror = mirror_no_video
-        else:
-            selected_mirror = mirror
-
-        response = get_with_retry(selected_mirror.format(beatmap))
-
-        if response is None:
-            if (mirror, mirror_no_video) == MIRRORS[-1]:
-                print(f"failed to download {beatmap}") # this was the last mirror available
-            else:
-                print(f"\tfailed to download {beatmap}, going to try another mirror")
-        else:
-            break
-
-    if response is None:
-        return False
-
+def process_and_save(content, beatmap_id, year, directory, history_file):
     try:
-        with path.open("wb") as f:
-            for buff in response:
-                f.write(buff)
-    except KeyboardInterrupt:
-        print(f"removing partially written file {path}")
-        path.unlink()
-        exit(1)
+        # Treat content as zip and find first .osu file
+        with zipfile.ZipFile(io.BytesIO(content)) as z:
+            osu_files = sorted([f for f in z.namelist() if f.endswith(".osu")])
+            if not osu_files:
+                print(f"Failed parsing beatmap {beatmap_id} as zip archive, no .osu files found inside", file=sys.stderr)
+                return False, False, False
 
-    print(f"downloaded {beatmap}")
-    return True
+            with z.open(osu_files[0]) as f:
+                text = f.read().decode('utf-8', errors='ignore')
+
+            title_m = re.search(r"^Title:(.*)$", text, re.MULTILINE)
+            artist_m = re.search(r"^Artist:(.*)$", text, re.MULTILINE)
+
+            orig_title = title_m.group(1).strip() if title_m else "Unknown Title"
+            orig_artist = artist_m.group(1).strip() if artist_m else "Unknown Artist"
+
+        # Check for invalid characters
+        forbidden_pattern = r'[<>:"/\\|?*]'
+        has_invalid = bool(re.search(forbidden_pattern, f"{orig_artist}{orig_title}"))
+
+        if has_invalid:
+            print(f"Beatmap {beatmap_id} has name which contains forbidden characters, going to sanitize it", file=sys.stderr)
+
+        # Sanitize
+        sanitized_title = sanitize_name(orig_title)
+        sanitized_artist = sanitize_name(orig_artist)
+
+        # Handle Duplicates and Save
+        year_dir = Path(directory) / str(year)
+        year_dir.mkdir(parents=True, exist_ok=True)
+
+        base_name = f"{beatmap_id} {sanitized_artist} - {sanitized_title}"
+        final_name = f"{base_name}.osz"
+
+        # Increment suffix if filename exists
+        counter = 1
+        is_duplicate = False
+        while (year_dir / final_name).exists():
+            is_duplicate = True
+            final_name = f"{base_name}_{counter}.osz"
+            counter += 1
+
+        with open(year_dir / final_name, "wb") as f:
+            f.write(content)
+
+        print(f"Saved beatmap as \"{final_name}\"")
+
+        # History Record
+        with open(history_file, "a", encoding="utf-8") as h:
+            # Note: this is not the actual file name, it has original artist and title, not sanitized
+            h.write(f"{beatmap_id} {orig_artist} - {orig_title}\n")
+
+        return True, is_duplicate, has_invalid
+    except Exception as e:
+        print(f"Failed parsing beatmap {beatmap_id} as zip archive, got error: {e}", file=sys.stderr)
+        return False, False, False
 
 
 def parse_maps_from_html(directory, year, filter_mode="STD"):
@@ -116,38 +158,143 @@ def parse_maps_from_html(directory, year, filter_mode="STD"):
 
             maps.append(match.group(1))
 
-    print(f"year {year}: parsed {len(maps)} maps")
+    print(f"Year {year}: parsed {len(maps)} maps")
     return maps
 
 
+def parse_history_file(path):
+    downloaded_ids = set()
+
+    if path.exists():
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                if " " in line:
+                    downloaded_ids.add(line.split(" ")[0].strip())
+
+    return downloaded_ids
+
+
+def download_map(beatmap, delay, no_video):
+    try:
+        print(f"Downloading {beatmap}")
+
+        # sleep before downloading to avoid "429 too many requests" errors
+        sleep(delay)
+
+        for mirror, mirror_no_video in MIRRORS:
+            if no_video:
+                selected_mirror = mirror_no_video
+            else:
+                selected_mirror = mirror
+
+            response = get_with_retry(selected_mirror.format(beatmap))
+
+            if response is None:
+                if (mirror, mirror_no_video) != MIRRORS[-1]:
+                    print(f"\tFailed to download {beatmap}, going to try another mirror", file=sys.stderr)
+            else:
+                break
+
+        if response is None:
+            print(f"Failed to download {beatmap} (tried all available mirrors)", file=sys.stderr)
+            return None
+
+        result = response.content
+
+        print(f"Downloaded {beatmap}")
+        return result
+
+    except Exception as e:
+        print(f"Error occured while downloading beatmap {beatmap}: {e}", file=sys.stderr)
+        return None
+
+
 def download_maps(download_directory, html_directory, year_start=2008, year_end=2026, filter_mode="STD", delay=5, no_video=False):
+    global failed_maps_counter
+
     total_maps = 0
     downloaded_maps = 0
-    failed_maps = 0
+    already_downloaded = 0
+    failed_to_download = []
+    duplicate_maps = 0
+    has_invalid_chars_maps = 0
 
     maps = {}
-
-    failed_to_download = []
 
     for year in range(year_start, year_end):
         maps[year] = parse_maps_from_html(html_directory, year, filter_mode)
         total_maps += len(maps[year])
 
-    for year, year_maps in maps.items():
-        for beatmap in year_maps:
-            if download_map(download_directory, year, beatmap, delay, no_video):
-                downloaded_maps += 1
-            else:
-                failed_to_download.append(beatmap)
-                failed_maps += 1
+    try:
+        print(f"Total maps: {total_maps}")
+        input("Start download? (press any key to continue, or Ctrl+C to cancel)")
 
-            percentage = "{:.2f}%".format((downloaded_maps + failed_maps) * 100 / total_maps)
+        Path(download_directory).mkdir(parents=True, exist_ok=True)
 
-            print(f"current progress: {percentage} (downloaded maps: {downloaded_maps}, failed maps: {failed_maps}, downloaded + failed: {downloaded_maps + failed_maps}, total_maps: {total_maps})")
+        for year, year_maps in maps.items():
+            history_file_path = Path(download_directory) / f"{year}_downloaded_maps.txt"
+            downloaded_ids = parse_history_file(history_file_path)
+
+            for beatmap in year_maps:
+                if beatmap in downloaded_ids:
+                    print(f"{beatmap} was already downloaded, skip download")
+                    downloaded_maps += 1
+                    already_downloaded += 1
+                    downloaded_ids.add(beatmap)
+                else:
+                    map_failed = False
+
+                    content = download_map(beatmap, delay, no_video)
+
+                    if content is None:
+                        map_failed = True
+                    else:
+                        ok, is_dup, has_invalid = process_and_save(content, beatmap, year, download_directory, history_file_path)
+                        if ok:
+                            downloaded_maps += 1
+                            downloaded_ids.add(beatmap)
+
+                        map_failed = not ok
+
+                        if is_dup:
+                            duplicate_maps += 1
+
+                        if has_invalid:
+                            has_invalid_chars_maps += 1
+
+                    if map_failed:
+                        failed_to_download.append(beatmap)
+                        failed_maps_counter += 1
+                    else:
+                        failed_maps_counter *= 0.99  # lower the counter a little bit, but don't fully reset it
+
+                    if failed_maps_counter > failed_maps_limit:
+                        print("Too many maps are failing to download, suspecting some captcha errors, or server is unavailable", file=sys.stderr)
+
+                        print("Failed to download following maps:", file=sys.stderr)
+                        print(*failed_to_download, sep="\n", file=sys.stderr)
+                        exit(4)
+
+                failed_maps = len(failed_to_download)
+                percentage = "{:.2f}%".format((downloaded_maps + failed_maps) * 100 / total_maps)
+
+                print(f"Year {year}, current progress: {percentage} (downloaded maps: {downloaded_maps}, failed maps: {failed_maps}, downloaded + failed: {downloaded_maps + failed_maps}, total_maps: {total_maps})")
+    except KeyboardInterrupt:
+        print("\nInterrupted...")
+
+    # Final Statistics
+    print("\n" + "="*30)
+    print("Execution Summary:")
+    print(f"Successfully downloaded: {downloaded_maps}")
+    print(f"Skipped (already in history): {already_downloaded}")
+    print(f"Filename duplicates handled: {duplicate_maps}")
+    print(f"Maps with invalid characters in metadata replaced: {has_invalid_chars_maps}")
+
+    print(f"Total failed: {len(failed_to_download)}")
 
     if failed_to_download:
-        print("failed to download followings maps:")
-        print(*failed_to_download, sep="\n")
+        print("Failed to download following maps:", file=sys.stderr)
+        print(*failed_to_download, sep="\n", file=sys.stderr)
         exit(2)
 
 
