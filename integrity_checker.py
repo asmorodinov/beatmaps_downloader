@@ -222,10 +222,6 @@ def main():
             is_valid, errs, warns = check_beatmapset_integrity(api, full_path, set_id)
             progress = f"[{index}/{total}] ID {set_id}:"
 
-            if warns:
-                for w in warns: print(f"  [!] WARNING: {w}")
-                all_warnings.append(f"ID {set_id}: {warns}")
-
             if not is_valid:
                 print(f"{progress} INVALID")
                 for e in errs: print(f"  [X] ERROR: {e}")
@@ -244,6 +240,10 @@ def main():
             else:
                 status = "VALID" if not warns else "VALID (with warnings)"
                 print(f"{progress} {status}")
+
+            if warns:
+                for w in warns: print(f"  [!] WARNING: {w}")
+                all_warnings.append(f"ID {set_id}: {warns}")
 
             time.sleep(0.1)
 
