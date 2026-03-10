@@ -77,8 +77,11 @@ def check_beatmapset_integrity(api, file_path, set_id):
         remote_map = {bm.version: bm.checksum for bm in remote_set.beatmaps}
 
         with zipfile.ZipFile(file_path, 'r') as z:
-            local_osu_files = [f for f in z.namelist() if f.endswith('.osu')]
+            # We use a dictionary of original filenames for case-sensitive lookup
+            # Path separators are normalized to '/' as per ZIP standard
+            files_in_zip = {info.filename.replace('\\', '/'): info for info in z.infolist()}
 
+            local_osu_files = [f for f in z.namelist() if f.endswith('.osu')]
             if not local_osu_files:
                 return False, "No .osu files in archive"
 
@@ -89,17 +92,58 @@ def check_beatmapset_integrity(api, file_path, set_id):
                     content_bytes = f.read()
                     content_text = content_bytes.decode('utf-8')
 
+                    # 1. MD5 Integrity Check
                     local_ver = extract_version_from_osu(content_text)
                     local_hash = get_md5(content_bytes)
 
                     if not local_ver:
                         return False, f"Could not find Version line in {osu_filename}"
-
                     if local_ver not in remote_map:
                         return False, f"Extra/Unknown version: [{local_ver}]"
-
                     if local_hash != remote_map[local_ver]:
                         return False, f"Hash mismatch for version: [{local_ver}]"
+
+                    # Helper to check asset existence (CASE SENSITIVE) and size
+                    def verify_asset(filename, asset_type):
+                        if not filename:
+                            return False, "Empty filename"
+
+                        # Remove quotes and normalize slashes, but KEEP CASE
+                        clean_name = filename.strip('"').strip().replace('\\', '/')
+
+                        # Strict case-sensitive check
+                        if clean_name not in files_in_zip:
+                            return False, f"Missing {asset_type} (Case Sensitive): {clean_name}"
+
+                        # Check for 0-byte files
+                        if files_in_zip[clean_name].file_size == 0:
+                            return False, f"Empty (0 KB) {asset_type}: {clean_name}"
+
+                        return True, ""
+
+                    # 2. Audio Filename Check
+                    audio_match = re.search(r'^AudioFilename\s*:\s*(.+)$', content_text, re.MULTILINE)
+                    if audio_match:
+                        ok, err = verify_asset(audio_match.group(1).strip(), "audio")
+                        if not ok:
+                            return False, f"{err} (in diff: {local_ver})"
+
+                    # 3. [Events] Section (BG and Video)
+                    events_section = re.search(r'\[Events\]\s*(.*?)(?=\n\[|$)', content_text, re.DOTALL)
+                    if events_section:
+                        events_text = events_section.group(1)
+
+                        # Backgrounds (Type 0)
+                        bg_matches = re.findall(r'^0\s*,[^,]+,\s*("[^"]+"|[^",]+)', events_text, re.MULTILINE)
+                        for bg in bg_matches:
+                            ok, err = verify_asset(bg, "background")
+                            if not ok: return False, f"{err} (in diff: {local_ver})"
+
+                        # Videos (Type 1 or Video)
+                        vid_matches = re.findall(r'^(?:Video|1)\s*,[^,]+,\s*("[^"]+"|[^",]+)', events_text, re.MULTILINE)
+                        for vid in vid_matches:
+                            ok, err = verify_asset(vid, "video")
+                            if not ok: return False, f"{err} (in diff: {local_ver})"
 
                     local_versions_found[local_ver] = local_hash
 
