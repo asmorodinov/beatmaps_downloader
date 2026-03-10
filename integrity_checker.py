@@ -71,90 +71,94 @@ def download_beatmapset(set_id, session_token, save_path, no_video):
 
 
 def check_beatmapset_integrity(api, file_path, set_id):
+    errors = []
+    warnings = []
+
     try:
         remote_set = api.beatmapset(set_id)
-        # Map remote versions to their checksums: { "Insane": "md5..." }
         remote_map = {bm.version: bm.checksum for bm in remote_set.beatmaps}
 
         with zipfile.ZipFile(file_path, 'r') as z:
-            # We use a dictionary of original filenames for case-sensitive lookup
-            # Path separators are normalized to '/' as per ZIP standard
-            files_in_zip = {info.filename.replace('\\', '/'): info for info in z.infolist()}
+            # Create two maps: one strict, one lowercase for case-insensitive fallback
+            files_strict = {info.filename.replace('\\', '/'): info for info in z.infolist()}
+            files_lower = {k.lower(): v for k, v in files_strict.items()}
 
             local_osu_files = [f for f in z.namelist() if f.endswith('.osu')]
             if not local_osu_files:
-                return False, "No .osu files in archive"
+                return False, ["No .osu files in archive"], []
 
             local_versions_found = {}
 
             for osu_filename in local_osu_files:
                 with z.open(osu_filename) as f:
                     content_bytes = f.read()
-                    content_text = content_bytes.decode('utf-8')
+                    content_text = content_bytes.decode('utf-8', errors='ignore')
 
-                    # 1. MD5 Integrity Check
+                    # 1. CRITICAL: MD5 and Versioning
                     local_ver = extract_version_from_osu(content_text)
                     local_hash = get_md5(content_bytes)
 
                     if not local_ver:
-                        return False, f"Could not find Version line in {osu_filename}"
+                        errors.append(f"Could not find Version line in {osu_filename}")
+                        continue
                     if local_ver not in remote_map:
-                        return False, f"Extra/Unknown version: [{local_ver}]"
+                        errors.append(f"Extra/Unknown version: [{local_ver}]")
+                        continue
                     if local_hash != remote_map[local_ver]:
-                        return False, f"Hash mismatch for version: [{local_ver}]"
-
-                    # Helper to check asset existence (CASE SENSITIVE) and size
-                    def verify_asset(filename, asset_type):
-                        if not filename:
-                            return False, "Empty filename"
-
-                        # Remove quotes and normalize slashes, but KEEP CASE
-                        clean_name = filename.strip('"').strip().replace('\\', '/')
-
-                        # Strict case-sensitive check
-                        if clean_name not in files_in_zip:
-                            return False, f"Missing {asset_type} (Case Sensitive): {clean_name}"
-
-                        # Check for 0-byte files
-                        if files_in_zip[clean_name].file_size == 0:
-                            return False, f"Empty (0 KB) {asset_type}: {clean_name}"
-
-                        return True, ""
-
-                    # 2. Audio Filename Check
-                    audio_match = re.search(r'^AudioFilename\s*:\s*(.+)$', content_text, re.MULTILINE)
-                    if audio_match:
-                        ok, err = verify_asset(audio_match.group(1).strip(), "audio")
-                        if not ok:
-                            return False, f"{err} (in diff: {local_ver})"
-
-                    # 3. [Events] Section (BG and Video)
-                    events_section = re.search(r'\[Events\]\s*(.*?)(?=\n\[|$)', content_text, re.DOTALL)
-                    if events_section:
-                        events_text = events_section.group(1)
-
-                        # Backgrounds (Type 0)
-                        bg_matches = re.findall(r'^0\s*,[^,]+,\s*("[^"]+"|[^",]+)', events_text, re.MULTILINE)
-                        for bg in bg_matches:
-                            ok, err = verify_asset(bg, "background")
-                            if not ok: return False, f"{err} (in diff: {local_ver})"
-
-                        # Videos (Type 1 or Video)
-                        vid_matches = re.findall(r'^(?:Video|1)\s*,[^,]+,\s*("[^"]+"|[^",]+)', events_text, re.MULTILINE)
-                        for vid in vid_matches:
-                            ok, err = verify_asset(vid, "video")
-                            if not ok: return False, f"{err} (in diff: {local_ver})"
+                        errors.append(f"Hash mismatch for version: [{local_ver}]")
+                        continue
 
                     local_versions_found[local_ver] = local_hash
 
-            # Check if any official versions are missing locally
+                    # 2. Asset Verification Logic
+                    def verify(filename, asset_type):
+                        if not filename: return
+                        clean = filename.strip('"').strip().replace('\\', '/')
+                        clean_lower = clean.lower()
+
+                        # Check Existence
+                        if clean not in files_strict:
+                            if clean_lower in files_lower:
+                                warnings.append(f"Case mismatch: {asset_type} '{clean}' (in {local_ver})")
+                            else:
+                                if asset_type == "audio":
+                                    errors.append(f"Missing audio: {clean} (in {local_ver})")
+                                else:
+                                    warnings.append(f"Missing {asset_type}: {clean} (in {local_ver})")
+                            return
+
+                        # Check Size
+                        if files_strict[clean].file_size == 0:
+                            if asset_type == "audio":
+                                errors.append(f"Empty audio file: {clean} (in {local_ver})")
+                            else:
+                                warnings.append(f"Empty {asset_type}: {clean} (in {local_ver})")
+
+                    # Audio check
+                    audio_match = re.search(r'^AudioFilename\s*:\s*(.+)$', content_text, re.MULTILINE)
+                    if audio_match:
+                        verify(audio_match.group(1).strip(), "audio")
+
+                    # BG/Video check
+                    events_section = re.search(r'\[Events\]\s*(.*?)(?=\n\[|$)', content_text, re.DOTALL)
+                    if events_section:
+                        events_text = events_section.group(1)
+                        bg_matches = re.findall(r'^0\s*,[^,]+,\s*("[^"]+"|[^",\s]+)', events_text, re.MULTILINE)
+                        for bg in bg_matches: verify(bg, "background")
+
+                        vid_matches = re.findall(r'^(?:Video|1)\s*,[^,]+,\s*("[^"]+"|[^",\s]+)', events_text, re.MULTILINE)
+                        for vid in vid_matches: verify(vid, "video")
+
+            # Check for missing diffs
             if len(local_versions_found) != len(remote_map):
                 missing = set(remote_map.keys()) - set(local_versions_found.keys())
-                return False, f"Missing versions: {list(missing)}"
+                errors.append(f"Missing versions: {list(missing)}")
 
-        return True, "OK"
     except Exception as e:
-        return False, f"Error: {str(e)}"
+        errors.append(f"Critical System Error: {str(e)}")
+
+    # Valid is True only if there are NO errors. Warnings don't trigger redownload.
+    return (len(errors) == 0), errors, warnings
 
 
 def main():
@@ -210,27 +214,38 @@ def main():
 
     print(f"Found {total} files. Starting validation...\n")
 
+    all_errors = []
+    all_warnings = []
+
     try:
         for index, (full_path, set_id) in enumerate(all_files, 1):
-            valid, msg = check_beatmapset_integrity(api, full_path, set_id)
-            progress = f"[{index}/{total}]"
+            is_valid, errs, warns = check_beatmapset_integrity(api, full_path, set_id)
+            progress = f"[{index}/{total}] ID {set_id}:"
 
-            if not valid:
-                print(f"{progress} INVALID ID {set_id}: {msg}")
+            if warns:
+                for w in warns: print(f"  [!] WARNING: {w}")
+                all_warnings.append(f"ID {set_id}: {warns}")
+
+            if not is_valid:
+                print(f"{progress} INVALID")
+                for e in errs: print(f"  [X] ERROR: {e}")
+
                 invalid_ids.append(set_id)
+                all_errors.append(f"ID {set_id}: {errs}")
+
                 if args.download:
                     if download_beatmapset(set_id, osu_session, full_path, args.no_video):
                         print(f"      [✓] Updated successfully")
                         fixed_ids.append(set_id)
                         downloaded_count += 1
-                        time.sleep(1) # Rate limit protection
+                        time.sleep(1)
                     else:
                         not_fixed_ids.append(set_id)
-                        print(f"      [X] Failed to update file")
             else:
-                print(f"{progress} VALID ID {set_id}")
+                status = "VALID" if not warns else "VALID (with warnings)"
+                print(f"{progress} {status}")
 
-            time.sleep(0.2) # API breath room
+            time.sleep(0.1)
 
     except KeyboardInterrupt:
         print("Interrupted...")
@@ -256,6 +271,14 @@ def main():
         print(f"Failed to DL:    {len(invalid_ids) - downloaded_count}")
     print(f"Time taken:      {duration/60:.1f} minutes")
     print(f"Invalid IDs saved to: invalid_ids.txt")
+
+    if all_warnings:
+        print(f"\nTotal Warnings: {len(all_warnings)}")
+        print(*all_warnings, sep="\n")
+
+    if all_errors:
+        print(f"\nTotal Errors: {len(all_errors)}")
+        print(*all_errors, sep="\n")
 
 if __name__ == "__main__":
     main()
