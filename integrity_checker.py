@@ -70,7 +70,7 @@ def download_beatmapset(set_id, session_token, save_path, no_video):
     return False
 
 
-def check_beatmapset_integrity(api, file_path, set_id):
+def check_beatmapset_integrity(api, file_path, set_id, no_video):
     errors = []
     warnings = []
 
@@ -101,14 +101,34 @@ def check_beatmapset_integrity(api, file_path, set_id):
                     if not local_ver:
                         errors.append(f"Could not find Version line in {osu_filename}")
                         continue
-                    if local_ver not in remote_map:
-                        errors.append(f"Extra/Unknown version: [{local_ver}]")
+
+                    # Parse Mode and CircleSize (Keys for mania)
+                    mode_match = re.search(r'^Mode\s*:\s*(\d+)', content_text, re.MULTILINE)
+                    cs_match = re.search(r'^CircleSize\s*:\s*(\d+)', content_text, re.MULTILINE)
+
+                    mode = int(mode_match.group(1)) if mode_match else -1
+                    keys = int(cs_match.group(1)) if cs_match else -1
+
+                    # 1. Try exact match
+                    matched_remote_version = None
+                    if local_ver in remote_map:
+                        matched_remote_version = local_ver
+
+                    # 2. If Mania or Taiko (or sometimes even Std), try [NK] prefix
+                    if not matched_remote_version and (mode == 3 or mode == 1 or mode == 0):
+                        expected_api_name = f"[{keys}K] {local_ver}"
+                        if expected_api_name in remote_map:
+                            matched_remote_version = expected_api_name
+
+                    if not matched_remote_version:
+                        errors.append(f"Extra/Unknown version: [{local_ver}] (Expected API name: {expected_api_name})")
                         continue
-                    if local_hash != remote_map[local_ver]:
+
+                    if local_hash != remote_map[matched_remote_version]:
                         errors.append(f"Hash mismatch for version: [{local_ver}]")
                         continue
 
-                    local_versions_found[local_ver] = local_hash
+                    local_versions_found[matched_remote_version] = local_hash
 
                     # 2. Asset Verification Logic
                     def verify(filename, asset_type):
@@ -144,10 +164,13 @@ def check_beatmapset_integrity(api, file_path, set_id):
                     if events_section:
                         events_text = events_section.group(1)
                         bg_matches = re.findall(r'^0\s*,[^,]+,\s*("[^"]+"|[^",\s]+)', events_text, re.MULTILINE)
-                        for bg in bg_matches: verify(bg, "background")
+                        for bg in bg_matches:
+                            verify(bg, "background")
 
-                        vid_matches = re.findall(r'^(?:Video|1)\s*,[^,]+,\s*("[^"]+"|[^",\s]+)', events_text, re.MULTILINE)
-                        for vid in vid_matches: verify(vid, "video")
+                        if not no_video:
+                            vid_matches = re.findall(r'^(?:Video|1)\s*,[^,]+,\s*("[^"]+"|[^",\s]+)', events_text, re.MULTILINE)
+                            for vid in vid_matches:
+                                verify(vid, "video")
 
             # Check for missing diffs
             if len(local_versions_found) != len(remote_map):
@@ -169,12 +192,23 @@ def main():
     parser.add_argument("-s", "--year_start", type=int, help="Start year (inclusive)")
     parser.add_argument("-e", "--year_end", type=int, help="End year (non-inclusive)")
     parser.add_argument("-n", "--no-video", action='store_true', help="don't include video, if set (to save disk space and network bandwidth)")
+    parser.add_argument("-i", "--ids-file", type=str, help="Path to a text file with specific IDs to check")
 
     args = parser.parse_args()
 
     keys = load_secrets("secret_keys.json")
     api = Ossapi(keys['client_id'], keys['client_secret'])
     osu_session = open("osu_session.txt", "r").read().strip() if args.download else None
+
+    target_ids = None
+    if args.ids_file:
+        try:
+            with open(args.ids_file, "r") as f:
+                target_ids = {int(line.strip()) for line in f if line.strip().isdigit()}
+            print(f"Loaded {len(target_ids)} target IDs from {args.ids_file}")
+        except Exception as e:
+            print(f"Error loading IDs file: {e}")
+            return
 
     # Step 1: Collect all files first for progress tracking
     all_files = []
@@ -194,6 +228,10 @@ def main():
                     if f.endswith(".osz"):
                         try:
                             sid = int(f.split(' ')[0])
+
+                            if target_ids is not None and sid not in target_ids:
+                                continue
+
                             all_files.append((os.path.join(entry.path, f), sid))
                         except:
                             continue
@@ -219,7 +257,7 @@ def main():
 
     try:
         for index, (full_path, set_id) in enumerate(all_files, 1):
-            is_valid, errs, warns = check_beatmapset_integrity(api, full_path, set_id)
+            is_valid, errs, warns = check_beatmapset_integrity(api, full_path, set_id, args.no_video)
             progress = f"[{index}/{total}] ID {set_id}:"
 
             if not is_valid:
@@ -272,12 +310,12 @@ def main():
     print(f"Time taken:      {duration/60:.1f} minutes")
     print(f"Invalid IDs saved to: invalid_ids.txt")
 
+    print(f"\nTotal Warnings: {len(all_warnings)}")
     if all_warnings:
-        print(f"\nTotal Warnings: {len(all_warnings)}")
         print(*all_warnings, sep="\n")
 
+    print(f"\nTotal Errors: {len(all_errors)}")
     if all_errors:
-        print(f"\nTotal Errors: {len(all_errors)}")
         print(*all_errors, sep="\n")
 
 if __name__ == "__main__":

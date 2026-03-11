@@ -1,0 +1,55 @@
+## STD, with video
+
+Total Warnings: 18
+ID 11019: ['Missing background: chorus.jpg (in Bonus)']
+ID 8710: ['Missing video: mikumikulegendinnocence3dsankakucomplex_xvid.avi (in Easy)', 'Missing video: mikumikulegendinnocence3dsankakucomplex_xvid.avi (in Hard)', 'Missing video: mikumikulegendinnocence3dsankakucomplex_xvid.avi (in Normal)']
+ID 9070: ["Case mismatch: video 'video.AVI' (in Armin's Hard)", "Case mismatch: video 'video.AVI' (in CNF's Hard)", "Case mismatch: video 'video.AVI' (in Easy)", "Case mismatch: video 'video.AVI' (in Hard)", "Case mismatch: video 'video.AVI' (in Kyo's Meltdown)"]
+ID 14159: ["Case mismatch: video 'Erase or Zero.avi' (in Ache!)", "Case mismatch: video 'Erase or Zero.avi' (in Break!)", "Case mismatch: video 'Erase or Zero.avi' (in Erase!)", "Case mismatch: video 'Erase or Zero.avi' (in Impossiblexu's Relaxing!)", "Case mismatch: video 'Erase or Zero.avi' (in Zero!)"]
+ID 17118: ['Missing video: falldown.flv (in Arigatou)', 'Missing video: falldown.flv (in CH Lai Song Fen)', 'Missing video: falldown.flv (in Clare no Kibou)']
+ID 17218: ["Case mismatch: background 'bg.jpg' (in banvi's Hoshi)", "Case mismatch: background 'bg.jpg' (in eveless' Tsuki)", "Case mismatch: background 'bg.jpg' (in Hard)"]
+ID 24773: ["Missing video: g Sub] uyGUMIuz Sorry for Being a Closet Otaku.avi (in SapphireGhost's Easy)"]
+ID 27790: ["Case mismatch: background 'bg.jpg' (in Muya's Easy)", "Case mismatch: background 'bg.jpg' (in Normal)"]
+ID 32046: ["Case mismatch: video 'Hiatus.avi' (in Easy)", "Case mismatch: video 'Hiatus.avi' (in Hard)", "Case mismatch: video 'Hiatus.avi' (in Insane)", "Case mismatch: video 'Hiatus.avi' (in Normal)"]
+ID 18775: ["Case mismatch: background 'Taiko-BG.PNG' (in Kanpakyin's Taiko)"]
+ID 36198: ["Case mismatch: audio 'dou iu koto nano.mp3' (in Easy!?)", "Case mismatch: audio 'dou iu koto nano.mp3' (in Insane!?)", "Case mismatch: audio 'dou iu koto nano.mp3' (in Normal!?)", "Case mismatch: audio 'dou iu koto nano.mp3' (in Ozzy's Hard!?)", "Case mismatch: audio 'dou iu koto nano.mp3' (in Ozzy's Taiko!?)"]
+ID 49455: ['Missing video: video.avi (in Crayon)', 'Missing video: video.avi (in Easy)', 'Missing video: video.avi (in Hard)', 'Missing video: video.avi (in Insane)', 'Missing video: video.avi (in Normal)', 'Missing video: video.avi (in tTaiko)']
+ID 51315: ["Missing video: Shiroi Yuki no Princess ha.avi (in kosiga's Normal)"]
+ID 109401: ["Case mismatch: background 'bg.jpg' (in Rakuen's Normal)"]
+ID 207441: ["Case mismatch: audio 'PartyxParty.mp3' (in Advanced Party)", "Case mismatch: audio 'PartyxParty.mp3' (in Expert Party)", "Case mismatch: audio 'PartyxParty.mp3' (in Novice Party)", "Case mismatch: audio 'PartyxParty.mp3' (in Ultimate Party)"]
+ID 334050: ["Case mismatch: audio 'hidamari.mp3' (in Solitude)"]
+ID 499478: ["Case mismatch: audio '06 TRAUMATIC (feat. Hatsune Miku).MP3' (in Anxient's ADVANCED)", "Case mismatch: audio '06 TRAUMATIC (feat. Hatsune Miku).MP3' (in Anxient's HARD)", "Case mismatch: audio '06 TRAUMATIC (feat. Hatsune Miku).MP3' (in EXTRA)", "Case mismatch: audio '06 TRAUMATIC (feat. Hatsune Miku).MP3' (in EXTREME)", "Case mismatch: audio '06 TRAUMATIC (feat. Hatsune Miku).MP3' (in Exote's INSANE)", "Case mismatch: audio '06 TRAUMATIC (feat. Hatsune Miku).MP3' (in Exote's NORMAL)", "Case mismatch: audio '06 TRAUMATIC (feat. Hatsune Miku).MP3' (in Sharkie's EXPERT)", "Case mismatch: audio '06 TRAUMATIC (feat. Hatsune Miku).MP3' (in TRAUMATIZED)"]
+ID 2155518: ["Case mismatch: background 'BG.jpg' (in rollpan's Expert)"]
+
+## STD, without video
+
+Total Warnings: 10
+ID 11019: ['Missing background: chorus.jpg (in Bonus)']
+ID 17218: ["Case mismatch: background 'bg.jpg' (in banvi's Hoshi)", "Case mismatch: background 'bg.jpg' (in eveless' Tsuki)", "Case mismatch: background 'bg.jpg' (in Hard)"]
+ID 27790: ["Case mismatch: background 'bg.jpg' (in Muya's Easy)", "Case mismatch: background 'bg.jpg' (in Normal)"]
+ID 18775: ["Case mismatch: background 'Taiko-BG.PNG' (in Kanpakyin's Taiko)"]
+ID 36198: ["Case mismatch: audio 'dou iu koto nano.mp3' (in Easy!?)", "Case mismatch: audio 'dou iu koto nano.mp3' (in Insane!?)", "Case mismatch: audio 'dou iu koto nano.mp3' (in Normal!?)", "Case mismatch: audio 'dou iu koto nano.mp3' (in Ozzy's Hard!?)", "Case mismatch: audio 'dou iu koto nano.mp3' (in Ozzy's Taiko!?)"]
+ID 109401: ["Case mismatch: background 'bg.jpg' (in Rakuen's Normal)"]
+ID 207441: ["Case mismatch: audio 'PartyxParty.mp3' (in Advanced Party)", "Case mismatch: audio 'PartyxParty.mp3' (in Expert Party)", "Case mismatch: audio 'PartyxParty.mp3' (in Novice Party)", "Case mismatch: audio 'PartyxParty.mp3' (in Ultimate Party)"]
+ID 334050: ["Case mismatch: audio 'hidamari.mp3' (in Solitude)"]
+ID 499478: ["Case mismatch: audio '06 TRAUMATIC (feat. Hatsune Miku).MP3' (in Anxient's ADVANCED)", "Case mismatch: audio '06 TRAUMATIC (feat. Hatsune Miku).MP3' (in Anxient's HARD)", "Case mismatch: audio '06 TRAUMATIC (feat. Hatsune Miku).MP3' (in EXTRA)", "Case mismatch: audio '06 TRAUMATIC (feat. Hatsune Miku).MP3' (in EXTREME)", "Case mismatch: audio '06 TRAUMATIC (feat. Hatsune Miku).MP3' (in Exote's INSANE)", "Case mismatch: audio '06 TRAUMATIC (feat. Hatsune Miku).MP3' (in Exote's NORMAL)", "Case mismatch: audio '06 TRAUMATIC (feat. Hatsune Miku).MP3' (in Sharkie's EXPERT)", "Case mismatch: audio '06 TRAUMATIC (feat. Hatsune Miku).MP3' (in TRAUMATIZED)"]
+ID 2155518: ["Case mismatch: background 'BG.jpg' (in rollpan's Expert)"]
+
+## Taiko, with video
+
+Total Warnings: 1
+ID 59981: ["Case mismatch: audio 'ODDS&ENDS.mp3' (in Cherry's Inner Taiko)", "Case mismatch: audio 'ODDS&ENDS.mp3' (in Taiko Futsuu)", "Case mismatch: audio 'ODDS&ENDS.mp3' (in Taiko Kantan)", "Case mismatch: audio 'ODDS&ENDS.mp3' (in Taiko Muzukashii)", "Case mismatch: audio 'ODDS&ENDS.mp3' (in Taiko Oni)", "Case mismatch: audio 'ODDS&ENDS.mp3' (in tTaiko Edit)"]
+
+## Taiko, without video
+
+Total Warnings: 1
+ID 59981: ["Case mismatch: audio 'ODDS&ENDS.mp3' (in Cherry's Inner Taiko)", "Case mismatch: audio 'ODDS&ENDS.mp3' (in Taiko Futsuu)", "Case mismatch: audio 'ODDS&ENDS.mp3' (in Taiko Kantan)", "Case mismatch: audio 'ODDS&ENDS.mp3' (in Taiko Muzukashii)", "Case mismatch: audio 'ODDS&ENDS.mp3' (in Taiko Oni)", "Case mismatch: audio 'ODDS&ENDS.mp3' (in tTaiko Edit)"]
+
+## Catch, with video
+
+Total Warnings: 1
+ID 2238952: ["Case mismatch: background 'BG.jpg' (in Aku's Rain)"]
+
+## Catch, without video
+
+Total Warnings: 1
+ID 2238952: ["Case mismatch: background 'BG.jpg' (in Aku's Rain)"]

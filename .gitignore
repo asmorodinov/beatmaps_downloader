@@ -1,0 +1,3 @@
+# don't commit these accidentally
+osu_session.txt
+secret_keys.json

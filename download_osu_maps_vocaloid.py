@@ -227,7 +227,7 @@ def download_maps(download_directory, html_directory, year_start=2008, year_end=
 
     try:
         print(f"Total maps: {total_maps}")
-        input("Start download? (press any key to continue, or Ctrl+C to cancel)")
+        input("Start download? (press enter to continue, or Ctrl+C to cancel)")
 
         Path(download_directory).mkdir(parents=True, exist_ok=True)
 

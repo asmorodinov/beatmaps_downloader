@@ -35,11 +35,11 @@ def sleep_with_countdown(total_amount, interval):
         time_left = total_amount - slept
         time_to_sleep = min(time_left, interval)
 
-        print(f"Sleep progress: {percentage:.2f}%, time left: {time_left}s", end='\r')
+        print(f"Sleep progress: {percentage:.2f}%, time left: {time_left}s", end='      \r')
         sleep(time_to_sleep)
         slept += time_to_sleep
 
-    print("Waking up from sleep")
+    print("Waking up from sleep                    ")
 
 
 def get_with_retry(beatmapset_id, no_video, num_retries=7):
@@ -59,9 +59,18 @@ def get_with_retry(beatmapset_id, no_video, num_retries=7):
     for i in range(num_retries):
         print(f"\tRequested {url}")
 
-        response = session.get(url, headers=headers)
-
         sleep_time = int(30 * (2 ** i) * (0.5 + random.random()))
+
+        try:
+            response = session.get(url, headers=headers, timeout=60)
+        except requests.exceptions.Timeout:
+            print(f"Got timeout error while trying to download beatmap {beatmapset_id}, going to sleep for {sleep_time}s and then retry", file=sys.stderr)
+            sleep(sleep_time)
+            continue
+        except requests.exceptions.RequestException as e:
+            print(f"Got an error while trying to download beatmap {beatmapset_id}: {e}")
+            # We don't know if this can be retried or not
+            return None
 
         if "text/html" in response.headers.get('Content-Type', ''):
             html_response_counter += 1
@@ -275,7 +284,7 @@ def download_maps(download_directory, html_directory, year_start=2008, year_end=
 
     try:
         print(f"Total maps: {total_maps}")
-        input("Start download? (press any key to continue, or Ctrl+C to cancel)")
+        input("Start download? (press enter to continue, or Ctrl+C to cancel)")
 
         Path(download_directory).mkdir(parents=True, exist_ok=True)
 
