@@ -80,7 +80,7 @@ Note:
 - Find `osu_session` cookie, copy URL-decoded value, paste it into `osu_session.txt` file (in the same directory as the script you are about to run)
 
 > [!WARNING]
-> Do not share your osu_session cookie with anyone, otherwise they will be able to impersonate as you.
+> Do not share your osu_session cookie with anyone, otherwise they will be able to impersonate you.
 
 #### 4.1.2. Run the script
 
@@ -140,6 +140,9 @@ Also, you need to install `ossapi` (which was already mentioned in the [dependen
     "client_secret": "{put your client secret here, string value}"
 }
 ```
+
+> [!WARNING]
+> It's also not recommended to share this client_id and client_secret with anyone. Even though it's only for accessing a public API, it won't allow modifying your account, still, keep this confidential.
 
 #### 4.4.2. Check (and optionally try to fix) files integrity
 
@@ -241,17 +244,28 @@ If everything worked fine, enjoy your newly downloaded vocaloid osu maps! (or ot
 
 In my case, everything seems to be working correctly, except for some minor warnings, and some files I had to redownload from `catboy.best` instead of the main source `osu.ppy.sh`.
 
-Notable issues (fixed by choosing a mirror instead of the main website):
-- [#1344515 (std)](https://osu.ppy.sh/beatmapsets/1344515) - File is not a zip file error, when downloading from `osu.ppy.sh`, but works fine if downloaded from [catboy.best](https://catboy.best/d/1344515)
-- [#2453821 (mania)](https://osu.ppy.sh/beatmapsets/2453821) - Hash mismatch. This does not always happen, sometimes it fixes itself after redownload, sometimes not. It seems that one of the osu servers is out-of-date, but others are up-to-date. Redownload from [catboy.best](https://catboy.best/d/245382) also helps
-- [#1958128 (taiko)](https://osu.ppy.sh/beatmapsets/1958128) - Same situation as above, hash mismatch, redownloaded it manually
-- [#2323300 (taiko)](https://osu.ppy.sh/beatmapsets/2323300) - Same situation as above, hash mismatch, redownloaded it manually
+Found problems (they were already fixed by Peppy, but you can still read about it if you want):
+
+<details>
+  <summary>(click to expand)</summary>
+
+Critical errors:
+- [#1344515 (std, already fixed by Peppy)](https://osu.ppy.sh/beatmapsets/1344515) - File is not a zip file error, when downloading from `osu.ppy.sh`, but works fine if downloaded from [catboy.best](https://catboy.best/d/1344515)
+- [#2453821 (mania, already fixed by Peppy)](https://osu.ppy.sh/beatmapsets/2453821) - Hash mismatch. This does not always happen, sometimes it fixes itself after redownload, sometimes not. It seems that one of the osu servers is out-of-date, but others are up-to-date. Redownload from [catboy.best](https://catboy.best/d/245382) also helps
+- [#1958128 (taiko, already fixed by Peppy)](https://osu.ppy.sh/beatmapsets/1958128) - Same situation as above, hash mismatch, redownloaded it manually
+- [#2323300 (taiko, already fixed by Peppy)](https://osu.ppy.sh/beatmapsets/2323300) - Same situation as above, hash mismatch, redownloaded it manually
 - [#17926 (std)](http://catboy.best/d/17926n) - This one has no audio file, when downloading from `catboy.best`. But it works fine, when downloaded from `osu.ppy.sh`. This is why mirrors can't always be trusted (apart from having outdated maps).
 
 Note: I reported first four issues to osu-web github - https://github.com/ppy/osu-web/issues/12836.
 
+Note: Peppy fixed these issues, after my report.
+
+After Peppy fixed these issues, I redownloaded the `.osz` files again from the main website instead of a mirror.
+
 As we can see, only a few maps out of more than a 1000, have critical issues (which still all of them can be solved by choosing a different download source). In case of using `catboy.best`, there would be a 100+ issues.
 
 Found warnings are saved in the [warnings.txt](./warnings.txt) file (they are not super critical).
+
+</details>
 
 Note: I will also likely upload the downloaded beatmaps to the google drive, so that anyone can download them, without any programming knowledge required. Maybe even VAT team can post them as an official vocaloid map archive.
