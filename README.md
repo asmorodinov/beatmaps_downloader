@@ -248,6 +248,8 @@ Notable issues (fixed by choosing a mirror instead of the main website):
 - [#2323300 (taiko)](https://osu.ppy.sh/beatmapsets/2323300) - Same situation as above, hash mismatch, redownloaded it manually
 - [#17926 (std)](http://catboy.best/d/17926n) - This one has no audio file, when downloading from `catboy.best`. But it works fine, when downloaded from `osu.ppy.sh`. This is why mirrors can't always be trusted (apart from having outdated maps).
 
+Note: I reported first four issues to osu-web github - https://github.com/ppy/osu-web/issues/12836.
+
 As we can see, only a few maps out of more than a 1000, have critical issues (which still all of them can be solved by choosing a different download source). In case of using `catboy.best`, there would be a 100+ issues.
 
 Found warnings are saved in the [warnings.txt](./warnings.txt) file (they are not super critical).
