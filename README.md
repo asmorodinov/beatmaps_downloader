@@ -238,7 +238,7 @@ python3 download_osu_maps_vocaloid.py ~/vocaloid ~/vocaloid_table -s 2024 -e 202
 Note: don't run too many processes in parallel, or you might risk overloading the server (and potentially even flagged for too many requests per second).
 At least, use the delay parameter, if you run multiple processes in parallel.
 
-## The end
+## Results
 
 If everything worked fine, enjoy your newly downloaded vocaloid osu maps! (or other beatmaps that you wanted to download)
 
@@ -268,4 +268,30 @@ Found warnings are saved in the [warnings.txt](./warnings.txt) file (they are no
 
 </details>
 
-Note: I will also likely upload the downloaded beatmaps to the google drive, so that anyone can download them, without any programming knowledge required. Maybe even VAT team can post them as an official vocaloid map archive.
+## Beatmaps archive
+
+For now, I also uploaded downloaded beatmaps to Google Drive, so if you want, you can download them from there, instead of running the script. Maybe in the future there would be a different location for the archive, e.g. pixeldrain, and it will be managed by VAT, but for now I just uploaded them myself.
+
+> [!WARNING]
+> This archive is not official, use at your own risk. I am not affiliated with the osu! team or with VAT, it's just my personal archive.
+
+All credit for the beatmaps goes to the original artists, mappers, BNs, osu! website and VAT. I just wrote the script to download them (originally, mostly for myself, but also want to share it in case it will be useful for someone else).
+
+### Update schedule
+
+The archive is not automatically updated, I have to do that manually. Maybe I will do that once every couple of months, but this is not guaranteed. As mentioned above, once you have most of the maps, it's easy to get the missing ones, since the script tracks downloaded maps in a file and will only download new ones, and skip already downloaded ones.
+
+Archive was last updated on 13.03.2026.
+
+### Links
+
+| Name + Link | Size |
+| ---         | ---  |
+| [STD (with video)](https://drive.google.com/drive/folders/1z0MufzGnHnWFd_8hQBbd4jeRJ_jwkrP5?usp=drive_link) | 15.5 GB |
+| [STD (without video)](https://drive.google.com/drive/folders/1U6BAkeG0x1P556sdd5KSYCcCaaPujRis?usp=drive_link) | 9.15 GB |
+| [Taiko (with video)](https://drive.google.com/drive/folders/1qCiO6_COR7g3PRM-6cJS4wGl-QmtjtHD?usp=drive_link) | 3.64 GB |
+| [Taiko (without video)](https://drive.google.com/drive/folders/1fUpqRv3KAUZ-f_EJqm4qid0JcWJfjjVH?usp=drive_link) | 2.21 GB |
+| [Mania (with video)](https://drive.google.com/drive/folders/1L_3wR7zSr73YR5jYV7gtWo1MN0ZyuE5u?usp=drive_link) | 2.30 GB |
+| [Mania (without video)](https://drive.google.com/drive/folders/1p0Mtz_kEZxDXfjlEijRpSJ7CpOQRDBHH?usp=drive_link) | 1.51 GB |
+| [Catch (with video)](https://drive.google.com/drive/folders/1JqiFuOPOcY_wLxX27rPD9aIQydAfBNB3?usp=drive_link) | 905 MB |
+| [Catch (without video)](https://drive.google.com/drive/folders/1ws_rPgJhtdk4sn2NwAVLDVWA3YNoqPAz?usp=drive_link) | 674 MB |
